@@ -33,7 +33,8 @@ def get_content(emojis=[]):
     file_to_show = files_png[0]
     blob = bucket.blob(file_to_show)
     name = blob.name
-    blob.download_to_filename(name)
+    #blob.download_to_filename(name)
+    bytes_data = blob.download_as_string()
     uid = name[12:-4]
     doc_ref = db.collection('images').document(uid)
     doc = doc_ref.get()
@@ -42,7 +43,7 @@ def get_content(emojis=[]):
     emojis = doc_dict['emojis']
     likes = doc_dict['likes']
     dislikes = doc_dict['dislikes']
-    return name, prompt, emojis, likes, dislikes
+    return name, prompt, emojis, likes, dislikes, bytes_data
 
 if 'emojis' not in st.session_state:
     st.session_state.emojis = []
@@ -82,12 +83,13 @@ else:
 
     # Show the image in column 1
     with col1:
-        name, prompt, emojis, likes, dislikes = st.session_state.file
-        st.image(name, width=300)
+        name, prompt, emojis, likes, dislikes, bytes_data = st.session_state.file
+        st.image(bytes_data, width=300)
+        #st.image(name, width=300)
 
     # Show the prompt, emojis and ranking in column 2
     with col3:
-        name, prompt, emojis, likes, dislikes = st.session_state.file
+        name, prompt, emojis, likes, dislikes, bytes_data = st.session_state.file
         #st.write('Likes: ', likes)
         #st.write('Dislikes: ', dislikes)
         st.write('Prompt: ', prompt)
