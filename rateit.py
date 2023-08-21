@@ -40,7 +40,7 @@ def get_content(emojis=[]):
         st.session_state.emoji_list = emoji_list
         if len(emoji_list) == 0:
             st.stop()
-        st.session_state.emojis = [emoji for emoji in st.session_state.emoji_list]
+        st.session_state.emojis = [emoji for emoji in st.session_state.emoji_list[0]]
         st.session_state.file = get_content(st.session_state.emojis)
     file_to_show = files_png[0]
     blob = bucket.blob(file_to_show)
