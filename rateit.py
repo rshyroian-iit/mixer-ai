@@ -57,7 +57,7 @@ if 'username' not in st.session_state:
         create_user(st.session_state.username)
         st.experimental_rerun()
 
-if 'emoji_list' not in st.session_state:
+if 'emoji_list' not in st.session_state and 'viewed' in st.session_state:
     collection_ref = db.collection('images')
     docs = collection_ref.stream()
     emoji_list = []
