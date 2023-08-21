@@ -29,8 +29,19 @@ def get_content(emojis=[]):
     files_png = [file for file in files_png if file not in st.session_state.viewed]
     if len(files_png) == 0:
         st.write('You have rated all the images!')
-        st.experimental_rerun()
-        st.stop()
+        collection_ref = db.collection('images')
+        docs = collection_ref.stream()
+        emoji_list = []
+        for doc in docs:
+            doc_dict = doc.to_dict()
+            if doc_dict['image_path'] not in st.session_state.viewed:
+                emoji_list.append(doc_dict['emojis'])
+        emoji_list = list(set(emoji_list))
+        st.session_state.emoji_list = emoji_list
+        if len(emoji_list) == 0:
+            st.stop()
+        st.session_state.emojis = [emoji for emoji in st.session_state.emoji_list]
+        st.session_state.file = get_content(st.session_state.emojis)
     file_to_show = files_png[0]
     blob = bucket.blob(file_to_show)
     name = blob.name
