@@ -29,6 +29,7 @@ def get_content(emojis=[]):
     files_png = [file for file in files_png if file not in st.session_state.viewed]
     if len(files_png) == 0:
         st.write('You have rated all the images!')
+        st.experimental_rerun()
         st.stop()
     file_to_show = files_png[0]
     blob = bucket.blob(file_to_show)
