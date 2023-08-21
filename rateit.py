@@ -54,7 +54,8 @@ if 'emoji_list' not in st.session_state:
     emoji_list = []
     for doc in docs:
         doc_dict = doc.to_dict()
-        emoji_list.append(doc_dict['emojis'])
+        if doc_dict['image_path'] not in st.session_state.viewed:
+            emoji_list.append(doc_dict['emojis'])
     emoji_list = list(set(emoji_list))
     st.session_state.emoji_list = emoji_list
 
