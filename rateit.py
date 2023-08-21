@@ -48,6 +48,15 @@ def get_content(emojis=[]):
 if 'emojis' not in st.session_state:
     st.session_state.emojis = []
 
+if 'username' not in st.session_state:
+    # Ask the user to authenticate
+    st.markdown("## Please sign in to continue")
+    onboarding_user = st.text_input("Enter your username:")
+    if onboarding_user:
+        st.session_state.username = onboarding_user
+        create_user(st.session_state.username)
+        st.experimental_rerun()
+
 if 'emoji_list' not in st.session_state:
     collection_ref = db.collection('images')
     docs = collection_ref.stream()
@@ -58,16 +67,8 @@ if 'emoji_list' not in st.session_state:
             emoji_list.append(doc_dict['emojis'])
     emoji_list = list(set(emoji_list))
     st.session_state.emoji_list = emoji_list
-
-if 'username' not in st.session_state:
-    # Ask the user to authenticate
-    st.markdown("## Please sign in to continue")
-    onboarding_user = st.text_input("Enter your username:")
-    if onboarding_user:
-        st.session_state.username = onboarding_user
-        create_user(st.session_state.username)
-        st.experimental_rerun()
-else:
+    
+if 'username' in st.session_state:
     # Ask the user to select one specific emoji
     dropdown = st.selectbox('Select an emoji', st.session_state.emoji_list)
     if dropdown:
