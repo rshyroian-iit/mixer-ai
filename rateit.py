@@ -14,7 +14,7 @@ bucket = storage.bucket()
 
 def create_user(user):
     doc_ref = db.collection('users').document(user)
-    if not doc_ref.get().exists:  
+    if not doc_ref.get().exists:
         doc_ref.set({'name': user, 'viewed': []})
     st.session_state.viewed = doc_ref.get().to_dict()['viewed']
 
@@ -24,7 +24,11 @@ def get_content(emojis=[]):
     files_png = []
     for doc in docs:
         doc_dict = doc.to_dict()
-        if set(emojis).issubset(doc_dict['emojis']):
+        if 'prompt_id' not in doc_dict:
+            continue
+        prompt_item = db.collection('prompts').document(doc_dict['prompt_id']).get().to_dict()
+        emoji_item = db.collection('emojis').document(prompt_item['emoji_id']).get().to_dict()
+        if set(emojis).issubset(emoji_item['emoji_combo']):
             files_png.append(doc_dict['image_path'])
     files_png = [file for file in files_png if file not in st.session_state.viewed]
     if len(files_png) == 0:
@@ -33,20 +37,35 @@ def get_content(emojis=[]):
     file_to_show = files_png[0]
     blob = bucket.blob(file_to_show)
     name = blob.name
-    #blob.download_to_filename(name)
-    bytes_data = blob.download_as_string()
+    blob.download_to_filename(name)
     uid = name[12:-4]
     doc_ref = db.collection('images').document(uid)
     doc = doc_ref.get()
     doc_dict = doc.to_dict()
-    prompt = doc_dict['prompt']
-    emojis = doc_dict['emojis']
+    prompt_item = db.collection('prompts').document(doc_dict['prompt_id']).get().to_dict()
+    emoji_item = db.collection('emojis').document(prompt_item['emoji_id']).get().to_dict()
+    prompt = prompt_item['prompt']
+    emojis = emoji_item['emoji_combo']
     likes = doc_dict['likes']
     dislikes = doc_dict['dislikes']
-    return name, prompt, emojis, likes, dislikes, bytes_data
+    return name, prompt, emojis, likes, dislikes
 
 if 'emojis' not in st.session_state:
     st.session_state.emojis = []
+
+if 'emoji_list' not in st.session_state:
+    collection_ref = db.collection('images')
+    docs = collection_ref.stream()
+    emoji_list = []
+    for doc in docs:
+        doc_dict = doc.to_dict()
+        if 'prompt_id' not in doc_dict:
+            continue
+        prompt_item = db.collection('prompts').document(doc_dict['prompt_id']).get().to_dict()
+        emoji_item = db.collection('emojis').document(prompt_item['emoji_id']).get().to_dict()
+        emoji_list.append(emoji_item['emoji_combo'])
+    emoji_list = list(set(emoji_list))
+    st.session_state.emoji_list = emoji_list
 
 if 'username' not in st.session_state:
     # Ask the user to authenticate
@@ -56,19 +75,7 @@ if 'username' not in st.session_state:
         st.session_state.username = onboarding_user
         create_user(st.session_state.username)
         st.experimental_rerun()
-
-if 'emoji_list' not in st.session_state and 'viewed' in st.session_state:
-    collection_ref = db.collection('images')
-    docs = collection_ref.stream()
-    emoji_list = []
-    for doc in docs:
-        doc_dict = doc.to_dict()
-        if doc_dict['image_path'] not in st.session_state.viewed:
-            emoji_list.append(doc_dict['emojis'])
-    emoji_list = list(set(emoji_list))
-    st.session_state.emoji_list = emoji_list
-    
-if 'username' in st.session_state:
+else:
     # Ask the user to select one specific emoji
     dropdown = st.selectbox('Select an emoji', st.session_state.emoji_list)
     if dropdown:
@@ -85,13 +92,12 @@ if 'username' in st.session_state:
 
     # Show the image in column 1
     with col1:
-        name, prompt, emojis, likes, dislikes, bytes_data = st.session_state.file
-        st.image(bytes_data, width=300)
-        #st.image(name, width=300)
+        name, prompt, emojis, likes, dislikes = st.session_state.file
+        st.image(name, width=300)
 
     # Show the prompt, emojis and ranking in column 2
     with col3:
-        name, prompt, emojis, likes, dislikes, bytes_data = st.session_state.file
+        name, prompt, emojis, likes, dislikes = st.session_state.file
         #st.write('Likes: ', likes)
         #st.write('Dislikes: ', dislikes)
         st.write('Prompt: ', prompt)
